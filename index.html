@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Classroom Sign-Out Sheet</title>
+<style>
+  :root{
+    --bg:#f4f6fb; --card:#fff; --line:#e2e8f0; --text:#1e293b; --muted:#64748b;
+    --primary:#2563eb;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; padding:24px 16px 60px;
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    background:var(--bg); color:var(--text);
+  }
+  .wrap{max-width:1080px;margin:0 auto;}
+
+  /* ---------- Header ---------- */
+  .top{display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between;margin-bottom:18px;}
+  h1{font-size:22px;margin:0 0 4px;}
+  .sub{margin:0;color:var(--muted);font-size:13px;max-width:660px;line-height:1.5;}
+  .sub strong{color:var(--text);}
+  .rule{
+    display:inline-block;margin-top:6px;background:#fef3c7;color:#92400e;
+    border:1px solid #fde68a;border-radius:8px;padding:4px 10px;font-size:12px;font-weight:700;
+  }
+  .clock{
+    font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;
+    background:#fff;border:1px solid var(--line);border-radius:12px;
+    padding:8px 18px;box-shadow:0 1px 2px rgba(15,23,42,.05);
+  }
+
+  /* ---------- Toolbar ---------- */
+  .toolbar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:12px;}
+  .stats{display:flex;flex-wrap:wrap;gap:8px;font-size:13px;}
+  .chip{background:#fff;border:1px solid var(--line);border-radius:999px;padding:5px 12px;color:var(--muted);}
+  .chip b{color:var(--text);}
+  .chip.out  b{color:#b45309;}
+  .chip.back b{color:#15803d;}
+  .chip.boy  b{color:#0369a1;}
+  .chip.girl b{color:#be185d;}
+  .tools{display:flex;gap:8px;flex-wrap:wrap;}
+
+  /* ---------- Buttons ---------- */
+  .btn{
+    border:1px solid transparent;border-radius:8px;padding:7px 13px;
+    font-size:13px;font-weight:600;cursor:pointer;transition:.15s;white-space:nowrap;
+    font-family:inherit;
+  }
+  .btn:disabled{opacity:.35;cursor:not-allowed;}
+  .btn.go{background:#dbeafe;color:#1d4ed8;}
+  .btn.go:hover:not(:disabled){background:#bfdbfe;}
+  .btn.back{background:#dcfce7;color:#15803d;}
+  .btn.back:hover:not(:disabled){background:#bbf7d0;}
+  .btn.reset{background:#f1f5f9;color:#64748b;padding:7px 10px;}
+  .btn.reset:hover:not(:disabled){background:#e2e8f0;color:#334155;}
+  .btn.ghost{background:#fff;border-color:var(--line);color:var(--text);}
+  .btn.ghost:hover{background:#f8fafc;}
+  .btn.danger{background:#fee2e2;color:#b91c1c;}
+  .btn.danger:hover{background:#fecaca;}
+  .btn.primary{background:#2563eb;color:#fff;}
+  .btn.primary:hover{background:#1d4ed8;}
+
+  /* "blocked" Go Out button */
+  .btn.go.blocked{
+    background:#f1f5f9;color:#94a3b8;border-color:#e2e8f0;
+    cursor:not-allowed;box-shadow:none;
+  }
+  .btn.go.blocked:hover{background:#f1f5f9;}
+
+  /* ---------- Table ---------- */
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 4px 16px rgba(15,23,42,.06);}
+  .scroll{overflow-x:auto;max-height:70vh;overflow-y:auto;}
+  table{width:100%;border-collapse:collapse;font-size:14px;min-width:1000px;}
+  thead th{
+    position:sticky;top:0;z-index:2;background:#f8fafc;
+    padding:11px 12px;text-align:left;font-size:11px;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);
+  }
+  tbody td{padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:middle;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:#f8fafc;}
+  tbody tr.is-out{background:#fff7ed;}
+  tbody tr.is-out:hover{background:#ffedd5;}
+  .idx{color:var(--muted);font-size:12px;width:38px;}
+  .time{font-variant-numeric:tabular-nums;font-weight:600;letter-spacing:.02em;white-space:nowrap;}
+  .time.empty{color:#cbd5e1;font-weight:400;}
+  .dur.running{color:#b45309;}
+  .actions{white-space:nowrap;text-align:right;}
+  .actions .btn{margin-left:4px;}
+
+  /* ---------- Name input ---------- */
+  .name-input{
+    width:100%;min-width:140px;font:inherit;color:inherit;font-weight:500;
+    padding:6px 8px;border:1px solid transparent;background:transparent;
+    border-radius:6px;transition:.15s;
+  }
+  .name-input:hover{border-color:var(--line);background:#fff;}
+  .name-input:focus{outline:none;border-color:var(--primary);background:#fff;box-shadow:0 0 0 3px rgba(37,99,235,.12);}
+
+  /* ---------- Gender select ---------- */
+  .gender-select{
+    font:inherit;font-size:12px;font-weight:700;
+    padding:5px 8px;border-radius:6px;cursor:pointer;
+    border:1px solid var(--line);background:#fff;color:var(--text);
+  }
+  .gender-select.boy {background:#e0f2fe;color:#0369a1;border-color:#bae6fd;}
+  .gender-select.girl{background:#fce7f3;color:#be185d;border-color:#fbcfe8;}
+  .gender-select:focus{outline:none;box-shadow:0 0 0 3px rgba(37,99,235,.12);}
+
+  /* ---------- Badges ---------- */
+  .badge{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.03em;white-space:nowrap;}
+  .badge.in{background:#f1f5f9;color:#64748b;}
+  .badge.out{background:#fef3c7;color:#b45309;}
+  .badge.back{background:#dcfce7;color:#15803d;}
+
+  /* ---------- Flash confirmation ---------- */
+  @keyframes flashBg{
+    0%   {background:#fde68a;}
+    100% {background:transparent;}
+  }
+  .flash{animation:flashBg .9s ease-out;}
+
+  /* ---------- Toast ---------- */
+  #toast{
+    position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);
+    background:#0f172a;color:#fff;padding:11px 20px;border-radius:10px;
+    font-size:13px;font-weight:600;opacity:0;pointer-events:none;
+    transition:opacity .25s, transform .25s;z-index:99;
+    box-shadow:0 10px 25px rgba(15,23,42,.25);max-width:92vw;text-align:center;
+    line-height:1.45;
+  }
+  #toast.show{opacity:1;transform:translate(-50%,0);}
+  #toast.warn{background:#b45309;}
+
+  /* ---------- Modal ---------- */
+  .backdrop{
+    position:fixed;inset:0;z-index:200;
+    background:rgba(15,23,42,.5);
+    display:flex;align-items:center;justify-content:center;
+    padding:20px;
+    opacity:0;pointer-events:none;transition:opacity .18s;
+  }
+  .backdrop.show{opacity:1;pointer-events:auto;}
+  .modal{
+    background:#fff;border-radius:14px;width:100%;max-width:420px;
+    padding:22px 22px 18px;box-shadow:0 24px 60px rgba(15,23,42,.3);
+    transform:translateY(8px) scale(.98);transition:transform .18s;
+    max-height:90vh;overflow-y:auto;
+  }
+  .backdrop.show .modal{transform:translateY(0) scale(1);}
+  .modal.wide{max-width:540px;}
+  .modal h2{margin:0 0 8px;font-size:17px;}
+  .modal p{margin:0 0 14px;font-size:13.5px;color:var(--muted);line-height:1.55;}
+  .modal p b{color:var(--text);}
+  .modal code{
+    background:#f1f5f9;color:#334155;padding:1px 5px;border-radius:4px;
+    font-size:12px;font-family:ui-monospace,Menlo,Consolas,monospace;
+  }
+  .modal-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:14px;}
+
+  /* ---------- Paste names box ---------- */
+  .paste-area{
+    width:100%;min-height:200px;resize:vertical;
+    font:13px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    padding:10px 12px;border:1px solid var(--line);border-radius:10px;
+    background:#f8fafc;color:var(--text);transition:.15s;
+  }
+  .paste-area:focus{outline:none;border-color:var(--primary);background:#fff;box-shadow:0 0 0 3px rgba(37,99,235,.12);}
+  .paste-area::placeholder{color:#94a3b8;}
+  .paste-meta{
+    display:flex;justify-content:space-between;align-items:center;gap:12px;
+    margin:8px 0 2px;font-size:12.5px;color:var(--muted);flex-wrap:wrap;
+  }
+  .paste-meta b{color:var(--text);}
+  .link-btn{
+    background:none;border:none;padding:0;font:inherit;font-size:12.5px;
+    color:var(--primary);font-weight:600;cursor:pointer;text-decoration:underline;
+    text-underline-offset:2px;
+  }
+  .link-btn:hover{color:#1d4ed8;}
+  .modal-note{
+    background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;
+    padding:8px 11px;font-size:12px;color:#1e40af;line-height:1.5;margin-top:12px;
+  }
+
+  @media print{
+    body{background:#fff;padding:0;}
+    .toolbar,.clock,.actions,.btn,#toast,.rule,.backdrop{display:none !important;}
+    .card{box-shadow:none;border:none;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <h1>Classroom Sign-Out Sheet</h1>
+      <p class="sub">
+        Press <strong>Go Out</strong> when a student leaves, then <strong>Return</strong> when they come back.
+        A greyed-out button means that step is already recorded (press ↺ to clear the row).
+        Use <strong>Paste Names</strong> to set up your roster in one go.
+        <br>
+        <span class="rule">Rule: at most 2 boys &amp; 2 girls may be out at the same time.</span>
+      </p>
+    </div>
+    <div class="clock" id="clock">--:--:--</div>
+  </header>
+
+  <div class="toolbar">
+    <div class="stats" id="stats"></div>
+    <div class="tools">
+      <button type="button" class="btn primary" id="pasteNamesBtn">Paste Names</button>
+      <button type="button" class="btn ghost"   id="exportBtn">Export CSV</button>
+      <button type="button" class="btn danger"  id="resetAllBtn">Reset All Times</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Student Name</th>
+            <th>Gender</th>
+            <th>Status</th>
+            <th>Out Time</th>
+            <th>Return Time</th>
+            <th>Duration</th>
+            <th style="text-align:right">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== Toast ===== -->
+<div id="toast" role="status" aria-live="polite"></div>
+
+<!-- ===== Confirm dialog (Reset All) ===== -->
+<div class="backdrop" id="backdrop" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-describedby="modalDesc">
+    <h2 id="modalTitle">Reset all times?</h2>
+    <p id="modalDesc">
+      This clears every student's <b>Out Time</b> and <b>Return Time</b>.
+      Names and genders are kept.
+    </p>
+    <div class="modal-actions">
+      <button type="button" class="btn ghost"  id="modalCancel">Cancel</button>
+      <button type="button" class="btn danger" id="modalConfirm">Yes, clear all times</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Paste Names dialog ===== -->
+<div class="backdrop" id="namesBackdrop" hidden>
+  <div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="namesTitle">
+    <h2 id="namesTitle">Paste student names</h2>
+    <p>
+      <b>One name per line.</b> Optionally add a comma and <code>boy</code> or <code>girl</code> —
+      for example <code>Alice Chen, girl</code>.
+    </p>
+
+    <textarea class="paste-area" id="namesInput" spellcheck="false"
+      placeholder="Alice Chen&#10;Bob Lee&#10;Carla Gomez, girl&#10;David Park, boy&#10;..."></textarea>
+
+    <div class="paste-meta">
+      <span><b id="namesCount">0</b> names detected</span>
+      <button type="button" class="link-btn" id="loadCurrentBtn">Load current names</button>
+    </div>
+
+    <div class="modal-note">
+      <b>Tip:</b> In Excel or Word, select your name column, copy, then paste it here.
+      Each line becomes one row.
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="btn ghost"   id="namesCancel">Cancel</button>
+      <button type="button" class="btn primary" id="namesApply" disabled>Apply names</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   CONFIG
+   ========================================================= */
+const NUM_STUDENTS   = 30;
+const MAX_PER_GENDER = 2;
+const STORAGE_KEY    = 'classroom-signout-v2';
+
+/* =========================================================
+   HELPERS
+   ========================================================= */
+const pad = n => String(n).padStart(2, '0');
+
+function fmtTime(ts){
+  if (!ts) return '—';
+  const d = new Date(ts);
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
+function fmtDuration(start, end){
+  if (!start) return '—';
+  const finish = end || Date.now();
+  let s = Math.max(0, Math.round((finish - start) / 1000));
+  const h = Math.floor(s / 3600); s %= 3600;
+  const m = Math.floor(s / 60);   s %= 60;
+  if (h) return `${h}h ${m}m`;
+  if (m) return `${m}m ${s}s`;
+  return `${s}s`;
+}
+
+const esc = s => String(s).replace(/[&<>"']/g,
+  c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+const plural = g => g === 'boy' ? 'boys' : 'girls';
+
+/* =========================================================
+   STATE
+   ========================================================= */
+function defaultStudents(){
+  return Array.from({length: NUM_STUDENTS}, (_, i) => ({
+    name: `Student ${i + 1}`,
+    gender: i % 2 === 0 ? 'boy' : 'girl',
+    outTime: null,
+    returnTime: null
+  }));
+}
+
+function loadStudents(){
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return defaultStudents();
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return defaultStudents();
+
+    return defaultStudents().map((d, i) => {
+      const s = parsed[i] || {};
+      const g = (s.gender === 'boy' || s.gender === 'girl') ? s.gender : d.gender;
+      return {
+        name: (typeof s.name === 'string' && s.name.trim()) ? s.name : d.name,
+        gender: g,
+        outTime:    Number.isFinite(s.outTime)    ? s.outTime    : null,
+        returnTime: Number.isFinite(s.returnTime) ? s.returnTime : null
+      };
+    });
+  } catch { return defaultStudents(); }
+}
+
+let students = loadStudents();
+
+function safeSave(){
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(students)); }
+  catch (e) { console.warn('Could not save to localStorage:', e); }
+}
+
+/* =========================================================
+   GENDER-QUOTA LOGIC
+   ========================================================= */
+function countOutByGender(g){
+  return students.filter(s => s.gender === g && s.outTime && !s.returnTime).length;
+}
+
+function isBlocked(i){
+  const s = students[i];
+  if (s.outTime) return false;
+  return countOutByGender(s.gender) >= MAX_PER_GENDER;
+}
+
+function blockedMessage(g){
+  return `Wait until there is vacancy — ${MAX_PER_GENDER} ${plural(g)} are already out.`;
+}
+
+/* =========================================================
+   BUILD TABLE
+   ========================================================= */
+const tbody   = document.getElementById('tbody');
+const clockEl = document.getElementById('clock');
+const rows    = [];
+
+students.forEach((st, i) => {
+  const tr = document.createElement('tr');
+
+  tr.innerHTML = `
+    <td class="idx">${i + 1}</td>
+    <td>
+      <input class="name-input" type="text" value="${esc(st.name)}"
+             aria-label="Name of student ${i + 1}">
+    </td>
+    <td>
+      <select class="gender-select" aria-label="Gender of student ${i + 1}">
+        <option value="boy">Boy</option>
+        <option value="girl">Girl</option>
+      </select>
+    </td>
+    <td class="status"></td>
+    <td class="time out"></td>
+    <td class="time ret"></td>
+    <td class="time dur"></td>
+    <td class="actions">
+      <button type="button" class="btn go">Go Out</button>
+      <button type="button" class="btn back">Return</button>
+      <button type="button" class="btn reset" title="Clear this row">↺</button>
+    </td>`;
+
+  tbody.appendChild(tr);
+
+  const nameInput = tr.querySelector('.name-input');
+  const genderSel = tr.querySelector('.gender-select');
+  const goBtn     = tr.querySelector('.go');
+  const backBtn   = tr.querySelector('.back');
+  const resetBtn  = tr.querySelector('.reset');
+
+  nameInput.addEventListener('input', () => {
+    students[i].name = nameInput.value;
+    safeSave();
+  });
+
+  genderSel.addEventListener('change', () => {
+    students[i].gender = genderSel.value;
+    syncAll();
+    safeSave();
+  });
+
+  goBtn.addEventListener('click',    () => goOut(i));
+  backBtn.addEventListener('click',  () => returnBack(i));
+  resetBtn.addEventListener('click', () => clearRow(i));
+
+  rows.push({
+    tr, nameInput, genderSel,
+    status: tr.querySelector('.status'),
+    out:    tr.querySelector('.out'),
+    ret:    tr.querySelector('.ret'),
+    dur:    tr.querySelector('.dur'),
+    goBtn, backBtn, resetBtn
+  });
+});
+
+/* =========================================================
+   ACTIONS
+   ========================================================= */
+function goOut(i){
+  const s = students[i];
+  if (s.outTime) return;
+
+  if (countOutByGender(s.gender) >= MAX_PER_GENDER){
+    toast(blockedMessage(s.gender), true);
+    return;
+  }
+
+  s.outTime    = Date.now();
+  s.returnTime = null;
+
+  syncAll();
+  safeSave();
+
+  flash(rows[i].out);
+  toast(`${s.name} went out at ${fmtTime(s.outTime)}`);
+}
+
+function returnBack(i){
+  const s = students[i];
+  if (!s.outTime || s.returnTime) return;
+
+  s.returnTime = Date.now();
+
+  syncAll();
+  safeSave();
+
+  flash(rows[i].ret);
+  toast(`${s.name} returned at ${fmtTime(s.returnTime)} · away ${fmtDuration(s.outTime, s.returnTime)}`);
+}
+
+function clearRow(i){
+  const s = students[i];
+  if (!s.outTime && !s.returnTime) return;
+
+  s.outTime    = null;
+  s.returnTime = null;
+
+  syncAll();
+  safeSave();
+  toast(`${s.name}: row cleared`);
+}
+
+function resetAllTimes(){
+  students.forEach(s => { s.outTime = null; s.returnTime = null; });
+  syncAll();
+  safeSave();
+  toast('All out / return times cleared');
+}
+
+/* =========================================================
+   RENDER
+   ========================================================= */
+function syncRow(i){
+  const s = students[i];
+  const r = rows[i];
+
+  const isOut    = !!s.outTime && !s.returnTime;
+  const returned = !!s.outTime && !!s.returnTime;
+  const blocked  = isBlocked(i);
+
+  if (r.nameInput.value !== s.name) r.nameInput.value = s.name;
+
+  r.genderSel.value = s.gender;
+  r.genderSel.classList.toggle('boy',  s.gender === 'boy');
+  r.genderSel.classList.toggle('girl', s.gender === 'girl');
+
+  if (!s.outTime)      r.status.innerHTML = '<span class="badge in">In class</span>';
+  else if (returned)   r.status.innerHTML = '<span class="badge back">Returned</span>';
+  else                 r.status.innerHTML = '<span class="badge out">Out</span>';
+
+  r.out.textContent = s.outTime ? fmtTime(s.outTime) : '—';
+  r.out.classList.toggle('empty', !s.outTime);
+
+  r.ret.textContent = s.returnTime ? fmtTime(s.returnTime) : '—';
+  r.ret.classList.toggle('empty', !s.returnTime);
+
+  r.dur.textContent = s.outTime ? fmtDuration(s.outTime, s.returnTime) : '—';
+  r.dur.classList.toggle('empty', !s.outTime);
+  r.dur.classList.toggle('running', isOut);
+
+  r.tr.classList.toggle('is-out', isOut);
+
+  r.goBtn.disabled = !!s.outTime;
+  r.goBtn.classList.toggle('blocked', blocked);
+  r.goBtn.setAttribute('aria-disabled', blocked ? 'true' : 'false');
+
+  if (blocked)         r.goBtn.title = blockedMessage(s.gender);
+  else if (s.outTime)  r.goBtn.title = 'Leaving time already recorded — press ↺ to clear';
+  else                 r.goBtn.title = 'Record leaving time';
+
+  r.backBtn.disabled = !s.outTime || !!s.returnTime;
+  r.backBtn.title = !s.outTime
+    ? 'Press "Go Out" first'
+    : (s.returnTime ? 'Return already recorded — press ↺ to clear' : 'Record return time');
+
+  r.resetBtn.disabled = !s.outTime && !s.returnTime;
+}
+
+function syncStats(){
+  const out      = students.filter(s => s.outTime && !s.returnTime).length;
+  const returned = students.filter(s => s.outTime && s.returnTime).length;
+  const inClass  = NUM_STUDENTS - out;
+  const boysOut  = countOutByGender('boy');
+  const girlsOut = countOutByGender('girl');
+
+  document.getElementById('stats').innerHTML = `
+    <span class="chip">Total <b>${NUM_STUDENTS}</b></span>
+    <span class="chip">In class <b>${inClass}</b></span>
+    <span class="chip out">Out now <b>${out}</b></span>
+    <span class="chip boy">Boys out <b>${boysOut}/${MAX_PER_GENDER}</b></span>
+    <span class="chip girl">Girls out <b>${girlsOut}/${MAX_PER_GENDER}</b></span>
+    <span class="chip back">Returned <b>${returned}</b></span>`;
+}
+
+function syncAll(){
+  students.forEach((_, i) => syncRow(i));
+  syncStats();
+}
+
+/* =========================================================
+   FEEDBACK
+   ========================================================= */
+function flash(el){
+  el.classList.remove('flash');
+  void el.offsetWidth;
+  el.classList.add('flash');
+  setTimeout(() => el.classList.remove('flash'), 900);
+}
+
+let toastTimer = null;
+function toast(msg, warn){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.toggle('warn', !!warn);
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), warn ? 3200 : 2200);
+}
+
+/* =========================================================
+   MODAL PLUMBING (shared open / close)
+   ========================================================= */
+function openBackdrop(el, focusEl){
+  el.hidden = false;
+  requestAnimationFrame(() => el.classList.add('show'));
+  document.addEventListener('keydown', onEsc);
+  if (focusEl) setTimeout(() => focusEl.focus(), 60);
+}
+
+function closeBackdrop(el){
+  el.classList.remove('show');
+  document.removeEventListener('keydown', onEsc);
+  setTimeout(() => { el.hidden = true; }, 180);
+}
+
+let activeBackdrop = null;
+
+function onEsc(e){
+  if (e.key === 'Escape' && activeBackdrop){
+    e.preventDefault();
+    closeBackdrop(activeBackdrop);
+    activeBackdrop = null;
+  }
+}
+
+/* ---------- Reset All modal ---------- */
+const backdrop = document.getElementById('backdrop');
+
+document.getElementById('resetAllBtn').addEventListener('click', () => {
+  activeBackdrop = backdrop;
+  openBackdrop(backdrop, document.getElementById('modalConfirm'));
+});
+
+document.getElementById('modalCancel').addEventListener('click', () => {
+  closeBackdrop(backdrop); activeBackdrop = null;
+});
+
+document.getElementById('modalConfirm').addEventListener('click', () => {
+  closeBackdrop(backdrop); activeBackdrop = null;
+  resetAllTimes();
+});
+
+backdrop.addEventListener('click', e => {
+  if (e.target === backdrop){ closeBackdrop(backdrop); activeBackdrop = null; }
+});
+
+/* =========================================================
+   PASTE NAMES
+   ========================================================= */
+const namesBackdrop = document.getElementById('namesBackdrop');
+const namesInput    = document.getElementById('namesInput');
+const namesCountEl  = document.getElementById('namesCount');
+const namesApplyBtn = document.getElementById('namesApply');
+
+/* Parse pasted text -> [{ name, gender|null }] */
+function parseNameList(text){
+  const out = [];
+  text.split(/\r?\n/).forEach(raw => {
+    const line = raw.trim();
+    if (!line) return;
+
+    // split on comma or tab
+    const parts = line.split(/[,\t]/).map(p => p.trim()).filter(Boolean);
+    const name  = parts[0];
+    if (!name) return;
+
+    let gender = null;
+    if (parts[1]){
+      const g = parts[1].toLowerCase();
+      if (['boy','male','m','b','男','男生'].includes(g))       gender = 'boy';
+      else if (['girl','female','f','g','女','女生'].includes(g)) gender = 'girl';
+    }
+    out.push({ name, gender });
+  });
+  return out;
+}
+
+function updateNamesMeta(){
+  const list = parseNameList(namesInput.value);
+  namesCountEl.textContent = list.length;
+
+  if (list.length === 0){
+    namesApplyBtn.disabled = true;
+  } else {
+    namesApplyBtn.disabled = false;
+  }
+}
+
+function applyNames(){
+  const list = parseNameList(namesInput.value);
+  if (!list.length) return;
+
+  const n = Math.min(list.length, NUM_STUDENTS);
+  for (let i = 0; i < n; i++){
+    students[i].name = list[i].name;
+    if (list[i].gender) students[i].gender = list[i].gender;
+  }
+
+  syncAll();
+  safeSave();
+
+  const extra = list.length - NUM_STUDENTS;
+  if (extra > 0){
+    toast(`Imported ${n} names — ${extra} extra line(s) ignored`, true);
+  } else {
+    toast(`Imported ${n} name${n === 1 ? '' : 's'}`);
+  }
+}
+
+document.getElementById('pasteNamesBtn').addEventListener('click', () => {
+  namesInput.value = '';
+  updateNamesMeta();
+  activeBackdrop = namesBackdrop;
+  openBackdrop(namesBackdrop, namesInput);
+});
+
+document.getElementById('loadCurrentBtn').addEventListener('click', () => {
+  namesInput.value = students
+    .map(s => `${s.name}, ${s.gender}`)
+    .join('\n');
+  updateNamesMeta();
+  namesInput.focus();
+  namesInput.setSelectionRange(0, 0);
+});
+
+namesInput.addEventListener('input', updateNamesMeta);
+namesInput.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter'){
+    e.preventDefault();
+    if (!namesApplyBtn.disabled){
+      closeBackdrop(namesBackdrop); activeBackdrop = null;
+      applyNames();
+    }
+  }
+});
+
+document.getElementById('namesCancel').addEventListener('click', () => {
+  closeBackdrop(namesBackdrop); activeBackdrop = null;
+});
+
+namesApplyBtn.addEventListener('click', () => {
+  closeBackdrop(namesBackdrop); activeBackdrop = null;
+  applyNames();
+});
+
+namesBackdrop.addEventListener('click', e => {
+  if (e.target === namesBackdrop){ closeBackdrop(namesBackdrop); activeBackdrop = null; }
+});
+
+/* =========================================================
+   EXPORT CSV
+   ========================================================= */
+document.getElementById('exportBtn').addEventListener('click', () => {
+  const head = ['#', 'Student Name', 'Gender', 'Status', 'Out Time', 'Return Time', 'Duration'];
+  const body = students.map((s, i) => {
+    const status = !s.outTime ? 'In class' : (s.returnTime ? 'Returned' : 'Out');
+    return [
+      i + 1,
+      s.name,
+      s.gender === 'boy' ? 'Boy' : 'Girl',
+      status,
+      s.outTime    ? fmtTime(s.outTime)    : '',
+      s.returnTime ? fmtTime(s.returnTime) : '',
+      s.outTime    ? fmtDuration(s.outTime, s.returnTime) : ''
+    ];
+  });
+
+  const csv = [head, ...body]
+    .map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
+    .join('\r\n');
+
+  const blob = new Blob(['\uFEFF' + csv], {type: 'text/csv;charset=utf-8;'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  const d    = new Date();
+  a.href = url;
+  a.download = `signout-${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+/* =========================================================
+   LIVE CLOCK + RUNNING DURATIONS
+   ========================================================= */
+function tick(){
+  clockEl.textContent = fmtTime(Date.now());
+
+  students.forEach((s, i) => {
+    if (s.outTime && !s.returnTime){
+      const cell = rows[i].dur;
+      cell.textContent = fmtDuration(s.outTime, null);
+      cell.classList.remove('empty');
+      cell.classList.add('running');
+    }
+  });
+}
+
+/* =========================================================
+   INIT
+   ========================================================= */
+syncAll();
+tick();
+setInterval(tick, 1000);
+</script>
+</body>
+</html>
